@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nishanth.jobportal.dto.JobResponseDTO;
 import com.nishanth.jobportal.entity.Job;
+import com.nishanth.jobportal.security.CurrentUserProvider;
 import com.nishanth.jobportal.service.JobService;
 
 @CrossOrigin(origins = "http://localhost:4200") 
@@ -23,15 +24,19 @@ import com.nishanth.jobportal.service.JobService;
 public class JobController {
 
     private final JobService jobService;
+    private final CurrentUserProvider currentUserProvider;
 
     // Constructor Injection (Industry Standard)
-    public JobController(JobService jobService) {
+    public JobController(JobService jobService, CurrentUserProvider currentUserProvider) {
         this.jobService = jobService;
+        this.currentUserProvider = currentUserProvider;
     }
 
     // POST /api/jobs/create/{userId}
+    // SECURITY: userId in the URL is only accepted if it matches the JWT-authenticated user.
     @PostMapping("/create/{userId}")
     public ResponseEntity<JobResponseDTO> postJob(@RequestBody Job job, @PathVariable Long userId) {
+        currentUserProvider.assertActingAsSelf(userId);
         JobResponseDTO savedJobDto = jobService.saveJob(job, userId);
         return new ResponseEntity<>(savedJobDto, HttpStatus.CREATED); // 201 Created
     }
@@ -54,8 +59,10 @@ public class JobController {
     }
 
     // 🎯 NEW ENDPOINT: GET /api/jobs/recruiter/{recruiterId}
+    // SECURITY: a recruiter can only list their own posted jobs, not another recruiter's.
     @GetMapping("/recruiter/{recruiterId}")
     public ResponseEntity<List<JobResponseDTO>> getJobsByRecruiter(@PathVariable Long recruiterId) {
+        currentUserProvider.assertActingAsSelf(recruiterId);
         List<JobResponseDTO> recruiterJobs = jobService.getJobsByRecruiter(recruiterId);
         return ResponseEntity.ok(recruiterJobs); // 200 OK
     }

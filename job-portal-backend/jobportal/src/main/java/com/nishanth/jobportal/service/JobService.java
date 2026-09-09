@@ -11,6 +11,7 @@ import com.nishanth.jobportal.dto.JobResponseDTO;
 import com.nishanth.jobportal.entity.Job;
 import com.nishanth.jobportal.entity.User;
 import com.nishanth.jobportal.enums.Role;
+import com.nishanth.jobportal.exception.UnauthorizedAccessException;
 import com.nishanth.jobportal.repository.JobRepository;
 import com.nishanth.jobportal.repository.UserRepository;
 
@@ -116,5 +117,21 @@ public class JobService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * SECURITY: Confirms that the given job was actually posted by the given
+     * recruiter, before letting that recruiter see who applied to it.
+     * Without this, any authenticated recruiter could view applications for
+     * a job they never posted, just by guessing/incrementing a jobId.
+     */
+    public void assertRecruiterOwnsJob(Long jobId, Long recruiterId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Job not found with ID: " + jobId));
+
+        if (job.getPostedBy() == null || !job.getPostedBy().getId().equals(recruiterId)) {
+            throw new UnauthorizedAccessException(
+                    "Access Denied: You are not authorized to view applications for a job you did not post.");
+        }
     }
 }

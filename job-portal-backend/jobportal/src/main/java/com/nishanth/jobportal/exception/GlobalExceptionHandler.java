@@ -67,6 +67,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles authorization failures where an authenticated user attempts to
+     * act on behalf of a different user. Maps cleanly to HTTP 403 Forbidden.
+     */
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.name(),
+                ex.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Fallback catch-all structural handler for unmanaged system runtime irregularities.
      * Maps to an explicit HTTP 500 Internal Server Error instead of hiding behind a fake 400 code.
      */

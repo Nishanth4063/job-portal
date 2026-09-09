@@ -6,7 +6,7 @@ GO
 
 IF NOT EXISTS (SELECT name FROM sys.server_principals WHERE name = 'jobuser')
 BEGIN
-    CREATE LOGIN jobuser WITH PASSWORD = 'NishUserPassword123!', DEFAULT_DATABASE = JobPortalDB;
+    CREATE LOGIN jobuser WITH PASSWORD = '$(JobUserPassword)', DEFAULT_DATABASE = JobPortalDB;
 END
 GO
 

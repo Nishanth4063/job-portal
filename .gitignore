@@ -34,3 +34,21 @@ build/
 
 ### Custom Ignores ###
 src/main/resources/application.properties
+
+# Development Tools & Compilations
+**/target/
+**/.idea/
+**/.vscode/
+**/*.class
+**/bin/
+
+# Dependency Management Arrays
+**/node_modules/
+dist/
+
+# System Environment Overrides
+.DS_Store
+*.log
+
+# Secrets and Environment Variables
+.env
