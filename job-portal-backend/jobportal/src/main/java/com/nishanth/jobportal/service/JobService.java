@@ -126,8 +126,12 @@ public class JobService {
      * a job they never posted, just by guessing/incrementing a jobId.
      */
     public void assertRecruiterOwnsJob(Long jobId, Long recruiterId) {
-        Job job = jobRepository.findById(jobId)
-                .orElseThrow(() -> new java.util.NoSuchElementException("Job not found with ID: " + jobId));
+        if (jobId == null || recruiterId == null) {
+        throw new IllegalArgumentException("Job ID and Recruiter ID must not be null");
+    }
+
+    Job job = jobRepository.findById(jobId)
+            .orElseThrow(() -> new java.util.NoSuchElementException("Job not found with ID: " + jobId));
 
         if (job.getPostedBy() == null || !job.getPostedBy().getId().equals(recruiterId)) {
             throw new UnauthorizedAccessException(

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nishanth.jobportal.dto.ApplicationResponseDTO;
 import com.nishanth.jobportal.entity.Application;
 import com.nishanth.jobportal.entity.User;
 import com.nishanth.jobportal.security.CurrentUserProvider;
@@ -31,84 +32,99 @@ public class ApplicationController {
     private final JobService jobService;
 
     public ApplicationController(ApplicationService applicationService,
-                                  CurrentUserProvider currentUserProvider,
-                                  JobService jobService) {
+                                 CurrentUserProvider currentUserProvider,
+                                 JobService jobService) {
         this.applicationService = applicationService;
         this.currentUserProvider = currentUserProvider;
         this.jobService = jobService;
     }
 
     /**
-     * 🎯 REFACTORED FOR FILE UPLOAD
      * POST /api/applications/apply/{userId}/{jobId}
-     * Consumes multipart/form-data to capture both IDs and the physical resume PDF file.
-     * SECURITY: userId in the URL is only accepted if it matches the JWT-authenticated user —
-     * otherwise a logged-in candidate could apply to jobs on behalf of someone else's account.
+     * Consumes multipart/form-data to process resume file uploads.
      */
     @PostMapping(value = "/apply/{userId}/{jobId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> applyToJob(
+    public ResponseEntity<ApplicationResponseDTO> applyToJob(
             @PathVariable Long userId, 
             @PathVariable Long jobId,
             @RequestParam("file") MultipartFile file) {
 
         currentUserProvider.assertActingAsSelf(userId);
 
-        // 🛡️ Frontend Guard Check: Enforce strictly PDF records
-        if (file.isEmpty() || ! "application/pdf".equals(file.getContentType())) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Submission Rejected: Please attach a valid physical PDF resume document.");
+        if (file.isEmpty() || !"application/pdf".equals(file.getContentType())) {
+            throw new IllegalArgumentException("Submission Rejected: Please attach a valid PDF resume document.");
         }
 
-        try {
-            Application application = applicationService.applyToJob(userId, jobId, file);
-            return new ResponseEntity<>(application, HttpStatus.CREATED); 
-        } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("File Processing Failure: " + e.getMessage());
-        }
+        Application application = applicationService.applyToJob(userId, jobId, file);
+        return new ResponseEntity<>(mapToDTO(application), HttpStatus.CREATED);
     }
 
-    // GET /api/applications/candidate/{userId}
-    // SECURITY: a candidate can only view their own application history.
+    /**
+     * GET /api/applications/candidate/{userId}
+     */
     @GetMapping("/candidate/{userId}")
-    public ResponseEntity<List<Application>> getApplicationsByCandidate(@PathVariable Long userId) {
+    public ResponseEntity<List<ApplicationResponseDTO>> getApplicationsByCandidate(@PathVariable Long userId) {
         currentUserProvider.assertActingAsSelf(userId);
-        List<Application> applications = applicationService.getApplicationsByCandidate(userId);
-        return ResponseEntity.ok(applications); 
+        List<ApplicationResponseDTO> response = applicationService.getApplicationsByCandidate(userId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
-    // GET /api/applications/job/{jobId}
-    // SECURITY: only the recruiter who posted this job can see who applied to it.
+    /**
+     * GET /api/applications/job/{jobId}
+     */
     @GetMapping("/job/{jobId}")
-    public ResponseEntity<List<Application>> getApplicationsByJob(@PathVariable Long jobId) {
+    public ResponseEntity<List<ApplicationResponseDTO>> getApplicationsByJob(@PathVariable Long jobId) {
         User currentUser = currentUserProvider.getCurrentUser();
         jobService.assertRecruiterOwnsJob(jobId, currentUser.getId());
-        List<Application> applications = applicationService.getApplicationsByJob(jobId);
-        return ResponseEntity.ok(applications); 
+
+        List<ApplicationResponseDTO> response = applicationService.getApplicationsByJob(jobId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
-    // 🎯 NEW MULTI-TENANCY ENDPOINT: GET /api/applications/recruiter/{recruiterId}
-    // SECURITY: a recruiter can only view applications across their own posted jobs.
+    /**
+     * GET /api/applications/recruiter/{recruiterId}
+     */
     @GetMapping("/recruiter/{recruiterId}")
-    public ResponseEntity<List<Application>> getApplicationsByRecruiter(@PathVariable Long recruiterId) {
+    public ResponseEntity<List<ApplicationResponseDTO>> getApplicationsByRecruiter(@PathVariable Long recruiterId) {
         currentUserProvider.assertActingAsSelf(recruiterId);
-        List<Application> applications = applicationService.getApplicationsByRecruiter(recruiterId);
-        return ResponseEntity.ok(applications); 
+        List<ApplicationResponseDTO> response = applicationService.getApplicationsByRecruiter(recruiterId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
-    // PUT /api/applications/{applicationId}/status?status=ACCEPTED&employerId=1
-    // SECURITY: employerId is only accepted if it matches the JWT-authenticated user;
-    // ApplicationService then separately confirms that employer actually owns the job.
+    /**
+     * PUT /api/applications/{applicationId}/status?status=ACCEPTED&employerId=1
+     */
     @PutMapping("/{applicationId}/status")
-    public ResponseEntity<Application> updateApplicationStatus(
+    public ResponseEntity<ApplicationResponseDTO> updateApplicationStatus(
             @PathVariable Long applicationId,
             @RequestParam String status,
             @RequestParam Long employerId) {
 
         currentUserProvider.assertActingAsSelf(employerId);
         Application updatedApplication = applicationService.updateApplicationStatus(applicationId, status, employerId);
-        return ResponseEntity.ok(updatedApplication); 
+        return ResponseEntity.ok(mapToDTO(updatedApplication));
+    }
+
+    private ApplicationResponseDTO mapToDTO(Application app) {
+        return ApplicationResponseDTO.builder()
+                .id(app.getId())
+                .jobId(app.getJob() != null ? app.getJob().getId() : null)
+                .jobTitle(app.getJob() != null ? app.getJob().getTitle() : null)
+                .candidateId(app.getSeeker() != null ? app.getSeeker().getId() : null)
+                .candidateName(app.getSeeker() != null ? app.getSeeker().getName() : null)
+                .candidateEmail(app.getSeeker() != null ? app.getSeeker().getEmail() : null)
+                .resumeUrl(app.getResumeUrl())
+                .status(app.getStatus())
+                .appliedDate(app.getAppliedDate())
+                .build();
     }
 }

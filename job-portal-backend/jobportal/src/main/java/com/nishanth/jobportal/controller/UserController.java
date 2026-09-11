@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nishanth.jobportal.dto.UserResponseDTO;
 import com.nishanth.jobportal.entity.User;
 import com.nishanth.jobportal.enums.Role;
 import com.nishanth.jobportal.exception.UnauthorizedAccessException;
@@ -29,33 +30,37 @@ public class UserController {
         this.currentUserProvider = currentUserProvider;
     }
 
-    // MENTOR FIX: Wrapped with ResponseEntity.ok() for consistent 200 OK status
     @GetMapping
-    public ResponseEntity<List<User>> getUsers() {
-        List<User> users = userService.getAllUsers();
+    public ResponseEntity<List<UserResponseDTO>> getUsers() {
+        assertAdmin();
+        List<UserResponseDTO> users = userService.getAllUsers()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
         return ResponseEntity.ok(users); 
     }
 
-    // MENTOR FIX: Wrapped with ResponseEntity.ok() for consistent 200 OK status
-    // SECURITY: a user can view their own profile; anyone else requires ADMIN.
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUser(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDTO> getUser(@PathVariable Long id) {
         assertSelfOrAdmin(id);
         User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(mapToDTO(user));
     }
 
-    // Endpoint to delete an existing user record safely
-    // SECURITY: a user can delete their own account; anyone else requires ADMIN.
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         assertSelfOrAdmin(id);
-
-        // Execute underlying persistence tracking removal step
         userService.deleteUser(id); 
-        
-        // Return 204 No Content - Clean, performant, and standard
         return ResponseEntity.noContent().build(); 
+    }
+
+    private UserResponseDTO mapToDTO(User user) {
+        return UserResponseDTO.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
     }
 
     private void assertSelfOrAdmin(Long targetUserId) {
@@ -66,6 +71,13 @@ public class UserController {
         if (!isSelf && !isAdmin) {
             throw new UnauthorizedAccessException(
                     "Access Denied: You can only view or modify your own account.");
+        }
+    }
+
+    private void assertAdmin() {
+        User currentUser = currentUserProvider.getCurrentUser();
+        if (currentUser.getRole() != Role.ADMIN) {
+            throw new UnauthorizedAccessException("Access Denied: Admin privileges required.");
         }
     }
 }
