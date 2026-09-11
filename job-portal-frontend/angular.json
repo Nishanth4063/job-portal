@@ -58,16 +58,19 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "job-portal-frontend:build:production"
-            },
-            "development": {
-              "buildTarget": "job-portal-frontend:build:development"
-            }
-          },
-          "defaultConfiguration": "development"
+      "builder": "@angular/build:dev-server",
+      "options": {
+        "proxyConfig": "proxy.conf.json"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "job-portal-frontend:build:production"
+        },
+        "development": {
+          "buildTarget": "job-portal-frontend:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
         },
         "test": {
           "builder": "@angular/build:unit-test"

@@ -52,3 +52,4 @@ dist/
 
 # Secrets and Environment Variables
 .env
+**/application-local.properties
