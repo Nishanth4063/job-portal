@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nishanth.jobportal.dto.AuthResponse;
 import com.nishanth.jobportal.dto.LoginRequest;
+import com.nishanth.jobportal.dto.UserResponseDTO;
 import com.nishanth.jobportal.entity.User;
 import com.nishanth.jobportal.security.JwtUtils;
 import com.nishanth.jobportal.service.UserService;
@@ -34,11 +35,19 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@Valid @RequestBody User user) {
-        User savedUser = userService.saveUser(user);
-        return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
-    }
+    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody User user) {
 
+        User savedUser = userService.saveUser(user);
+
+        UserResponseDTO response = UserResponseDTO.builder()
+            .id(savedUser.getId())
+            .name(savedUser.getName())
+            .email(savedUser.getEmail())
+            .role(savedUser.getRole())
+            .build();
+
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         User user = userService.getUserByEmail(loginRequest.getEmail());
