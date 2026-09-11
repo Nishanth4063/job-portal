@@ -8,33 +8,49 @@ import { Application } from '../../models/application';
 })
 export class ApplicationService {
   
-  // ✅ CORRECTED: Changed from hardcoded localhost to a relative URL for Nginx proxy routing
-  private apiUrl = '/api/applications';
+  private readonly apiUrl = '/api/applications';
 
   constructor(private http: HttpClient) { }
 
   /**
-   * 🎯 REFACTORED FOR RESUME UPLOAD
-   * 1. POST: Apply to a job -> /api/applications/apply/{userId}/{jobId}
+   * POST: Apply to a job with physical PDF resume
+   * /api/applications/apply/{userId}/{jobId}
    */
   applyToJob(userId: number, jobId: number, file: File): Observable<Application> {
     const formData = new FormData();
-    formData.append('file', file, file.name); // Maps to backend MultiPart file interceptor
+    formData.append('file', file, file.name);
 
     return this.http.post<Application>(`${this.apiUrl}/apply/${userId}/${jobId}`, formData);
   }
 
-  // 2. GET: Retrieve applications by candidate -> /api/applications/candidate/{userId}
+  /**
+   * GET: Retrieve applications for a specific candidate
+   * /api/applications/candidate/{userId}
+   */
   getApplicationsByCandidate(userId: number): Observable<Application[]> {
     return this.http.get<Application[]>(`${this.apiUrl}/candidate/${userId}`);
   }
 
-  // 3. GET: Retrieve applications by job -> /api/applications/job/{jobId}
+  /**
+   * GET: Retrieve applications for a specific job listing
+   * /api/applications/job/{jobId}
+   */
   getApplicationsByJob(jobId: number): Observable<Application[]> {
     return this.http.get<Application[]>(`${this.apiUrl}/job/${jobId}`);
   }
 
-  // 4. PUT: Update status -> /api/applications/{applicationId}/status?status=ACCEPTED&employerId=1
+  /**
+   * GET: Retrieve all applications across all jobs owned by a recruiter
+   * /api/applications/recruiter/{recruiterId}
+   */
+  getApplicationsByRecruiter(recruiterId: number): Observable<Application[]> {
+    return this.http.get<Application[]>(`${this.apiUrl}/recruiter/${recruiterId}`);
+  }
+
+  /**
+   * PUT: Update candidate application status
+   * /api/applications/{applicationId}/status?status=ACCEPTED&employerId=1
+   */
   updateApplicationStatus(applicationId: number, status: string, employerId: number): Observable<Application> {
     const params = new HttpParams()
       .set('status', status)

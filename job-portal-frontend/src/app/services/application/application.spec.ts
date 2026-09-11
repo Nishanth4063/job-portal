@@ -1,12 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApplicationService } from './application.service';
 
-describe('Application', () => {
+describe('ApplicationService', () => {
   let service: ApplicationService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        ApplicationService,
+        provideHttpClient(),
+        provideHttpClientTesting()
+      ]
+    });
     service = TestBed.inject(ApplicationService);
   });
 

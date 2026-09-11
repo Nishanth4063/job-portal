@@ -108,12 +108,12 @@
               
               <td>
                 <div class="profile-meta">
-                  <strong class="candidate-name">{{ app.seeker?.name || 'Anonymous' }}</strong>
-                  <span class="candidate-email" *ngIf="app.seeker?.email">📧 {{ app.seeker?.email }}</span>
+                  <strong class="candidate-name">{{ app.candidateName || 'Anonymous' }}</strong>
+                  <span class="candidate-email" *ngIf="app.candidateEmail">📧 {{ app.candidateEmail }}</span>
                 </div>
               </td>
               
-              <td class="highlight-text">{{ app.job?.title }}</td>
+              <td class="highlight-text">{{ app.jobTitle }}</td>
               
               <td>
                 <a *ngIf="app.resumeUrl" 
@@ -128,7 +128,7 @@
               </td>
 
               <td>
-                <span class="status-badge" [ngClass]="app.status?.toLowerCase()">
+                <span class="status-badge" [ngClass]="app.status.toLowerCase()">
                   {{ app.status }}
                 </span>
               </td>

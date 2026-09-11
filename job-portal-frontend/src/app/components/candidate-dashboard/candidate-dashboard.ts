@@ -1,24 +1,25 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, ActivatedRoute } from '@angular/router'; // ✅ REMOVED: RouterLink reference
-import { JobService } from '../../services/job/job.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { ApplicationService } from '../../services/application/application.service';
+import { Application } from '../../models/application';
 
 @Component({
   selector: 'app-candidate-dashboard',
   standalone: true,
-  imports: [CommonModule], // ✅ FIXED: Stripped unused RouterLink directive
+  imports: [CommonModule],
   templateUrl: './candidate-dashboard.html',
   styleUrl: './candidate-dashboard.scss',
 })
 export class CandidateDashboardComponent implements OnInit {
 
-  myApplications: any[] = [];
+  myApplications: Application[] = [];
   totalAppliedCount: number = 0;
   totalResponsesCount: number = 0;
   currentCandidateId!: number;
 
   constructor(
-    private jobService: JobService, 
+    private applicationService: ApplicationService, 
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -40,17 +41,16 @@ export class CandidateDashboardComponent implements OnInit {
   }
 
   loadCandidateApplicationHistory(): void {
-    this.jobService.getApplicationsByCandidate(this.currentCandidateId).subscribe({
-      next: (data) => {
+    this.applicationService.getApplicationsByCandidate(this.currentCandidateId).subscribe({
+      next: (data: Application[]) => {
         this.myApplications = data;
         this.totalAppliedCount = data.length;
         this.totalResponsesCount = data.filter(
-          (app: any) => app.status === 'ACCEPTED' || app.status === 'REJECTED'
+          app => app.status === 'ACCEPTED' || app.status === 'REJECTED'
         ).length;
-        console.log('Candidate application grid data telemetry updated:', data);
       },
       error: (err) => {
-        console.error('Failed to load candidate application timeline profiles:', err);
+        console.error('Failed to load candidate applications:', err);
       }
     });
   }

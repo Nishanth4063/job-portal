@@ -31,11 +31,11 @@
         <tbody>
           <tr *ngFor="let app of myApplications">
             <td class="text-muted">{{ app.id }}</td>
-            <td class="highlight-text">{{ app.job?.title }}</td>
-            <td>{{ app.job?.postedByName || 'Enterprise Partner' }}</td>
+            <td class="highlight-text">{{ app.jobTitle }}</td>
+            <td>Enterprise Partner</td>
             <td>{{ app.appliedDate | date:'mediumDate' }}</td>
             <td>
-              <span class="status-badge" [ngClass]="app.status?.toLowerCase()">
+              <span class="status-badge" [ngClass]="app.status.toLowerCase()">
                 {{ app.status }}
               </span>
             </td>
